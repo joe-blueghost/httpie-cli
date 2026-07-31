@@ -285,6 +285,16 @@ def test_headers_preserve_prepared_headers(httpbin_both):
     assert r.json['headers']['Content-Length'] == '3'
 
 
+@pytest.mark.parametrize('custom_headers', [
+    ['header1:xyz'],
+    ['header1:xyz', 'header2:abc'],
+])
+def test_content_type_preserved_with_custom_headers(custom_headers):
+    r = http('--offline', '--print=H', 'POST', 'example.org',
+             *custom_headers, 'x=1')
+    assert 'Content-Type: application/json' in r
+
+
 @pytest.mark.parametrize('pretty', ['format', 'none'])
 def test_headers_multiple_headers_representation(httpbin_both, pretty):
     r = http('--offline', '--pretty', pretty, 'example.org',
