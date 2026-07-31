@@ -543,6 +543,7 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
         if self.args.offline:
             self.args.download = False
             self.args.download_resume = False
+            self.args.save = False
             return
         if not self.args.download:
             if self.args.download_resume:
@@ -550,6 +551,13 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
         if self.args.download_resume and not (
                 self.args.download and self.args.output_file):
             self.error('--continue requires --output to be specified')
+        if self.args.save:
+            if self.args.download:
+                self.error('--save and --download are mutually exclusive')
+            if self.args.output_file:
+                self.error('--save and --output are mutually exclusive')
+        if self.args.save_dir and not self.args.save:
+            self.error('--save-dir requires --save')
 
     def _process_format_options(self):
         format_options = self.args.format_options or []
