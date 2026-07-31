@@ -549,6 +549,32 @@ output_options.add_argument(
     """,
 )
 output_options.add_argument(
+    '--save',
+    action='store_true',
+    default=False,
+    short_help='Save the response body to an auto-named file alongside normal output.',
+    help="""
+    Save the response body to an auto-named file while still displaying
+    normal terminal output (headers, body, colors, formatting). The filename
+    is auto-generated from the Content-Disposition header or URL path. If
+    the target file already exists, a numeric suffix is appended. The path
+    of the saved file is printed to stderr.
+
+    """,
+)
+output_options.add_argument(
+    '--save-dir',
+    dest='save_dir',
+    default=None,
+    metavar='DIR',
+    short_help='Directory to save the response body to (used with --save).',
+    help="""
+    Specify the output directory for --save. Defaults to the current
+    working directory. Requires --save.
+
+    """,
+)
+output_options.add_argument(
     '--continue',
     '-c',
     dest='download_resume',

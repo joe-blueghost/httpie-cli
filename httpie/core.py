@@ -14,7 +14,13 @@ from .cli.constants import OUT_REQ_BODY
 from .cli.nested_json import NestedJSONSyntaxError
 from .client import collect_messages
 from .context import Environment, LogLevel
-from .downloads import Downloader
+from .downloads import (
+    Downloader,
+    filename_from_content_disposition,
+    filename_from_url,
+    get_unique_filename,
+    trim_filename_if_needed,
+)
 from .models import (
     RequestsMessageKind,
     OutputOptions
@@ -204,6 +210,7 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
             args.follow = True  # --download implies --follow.
             downloader = Downloader(env, output_file=args.output_file, resume=args.download_resume)
             downloader.pre_request(args.headers)
+        save_chunks = [] if args.save else None
         messages = collect_messages(env, args=args,
                                     request_body_read_callback=request_body_read_callback)
         force_separator = False
@@ -227,6 +234,13 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
                     force_separator = is_streamed_upload and env.stdout_isatty
             else:
                 final_response = message
+                if save_chunks is not None:
+                    orig_iter_content = message.iter_content
+                    def _tee_iter_content(chunk_size=1, decode_unicode=False, _orig=orig_iter_content, _buf=save_chunks):
+                        for chunk in _orig(chunk_size, decode_unicode=decode_unicode):
+                            _buf.append(chunk)
+                            yield chunk
+                    message.iter_content = _tee_iter_content
                 if args.check_status or downloader:
                     exit_status = http_status_to_exit_status(http_status=message.status_code, follow=args.follow)
                     if exit_status != ExitStatus.SUCCESS and (not env.stdout_isatty or args.quiet == 1):
@@ -258,6 +272,28 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
                     f'Incomplete download: size={downloader.status.total_size};'
                     f' downloaded={downloader.status.downloaded}'
                 )
+        if args.save and final_response and exit_status == ExitStatus.SUCCESS:
+            content_disposition = final_response.headers.get('Content-Disposition')
+            if content_disposition:
+                filename = filename_from_content_disposition(content_disposition)
+            else:
+                filename = None
+            if not filename:
+                filename = filename_from_url(
+                    url=initial_request.url,
+                    content_type=final_response.headers.get('Content-Type'),
+                )
+            save_dir = args.save_dir or '.'
+            filename = trim_filename_if_needed(filename, directory=save_dir)
+            filepath = os.path.join(save_dir, filename)
+            filepath = get_unique_filename(filepath)
+            if save_chunks:
+                body = b''.join(save_chunks)
+            else:
+                body = final_response.content
+            with open(filepath, 'wb') as f:
+                f.write(body)
+            env.stderr.write(f'Saving to: {filepath}\n')
         return exit_status
 
     finally:
