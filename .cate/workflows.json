@@ -4,8 +4,28 @@
     "name": "httpie-cli"
   },
   "tracker": {
-    "provider": "local",
-    "label": "cate"
+    "provider": "jira",
+    "label": "cate",
+    "projectName": "httpie-example",
+    "statusOptions": {
+      "ready": { "optionId": "10494" },
+      "in_progress": { "optionId": "10495" },
+      "in_review": { "optionId": "10498" },
+      "human_review": { "optionId": "10496" },
+      "done": { "optionId": "10497" }
+    },
+    "jira": {
+      "site": "blueghostai.atlassian.net",
+      "cloudId": "dc9ebf1b-bdaf-49c9-93c9-e625b5381f4d",
+      "projectKey": "HTTPIE",
+      "boardId": 405,
+      "blockingLinkType": "Blocks",
+      "usesSprints": false,
+      "otherBoard": {
+        "url": "https://blueghostai.atlassian.net/rest/api/3/search/jql",
+        "jql": "project = HTTPIE AND status in ({statuses}) AND assignee = currentUser() ORDER BY Rank ASC"
+      }
+    }
   },
   "git": {
     "defaultBranch": "main",
