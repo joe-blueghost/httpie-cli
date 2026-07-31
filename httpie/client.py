@@ -236,26 +236,38 @@ def apply_missing_repeated_headers(
 ) -> None:
     """Update the given `prepared_request`'s headers with the original
     ones. This allows the requests to be prepared as usual, and then later
-    merged with headers that are specified multiple times."""
+    merged with headers that are specified multiple times.
 
-    new_headers = HTTPHeadersDict(prepared_request.headers)
+    Builds the result from scratch using add() to avoid dependence on
+    multidict's popone()/update() interaction semantics, which vary
+    across versions and can silently drop headers.
+    """
+
+    new_headers = HTTPHeadersDict()
+    replaced_keys = set()
+
     for prepared_name, prepared_value in prepared_request.headers.items():
-        if prepared_name not in original_headers:
+        casefold_name = prepared_name.casefold()
+        if casefold_name in replaced_keys:
             continue
 
-        original_keys, original_values = zip(*filter(
-            lambda item: item[0].casefold() == prepared_name.casefold(),
+        if prepared_name not in original_headers:
+            new_headers.add(prepared_name, prepared_value)
+            continue
+
+        original_items = list(filter(
+            lambda item: item[0].casefold() == casefold_name,
             original_headers.items()
         ))
+        original_values = [v for _, v in original_items]
 
         if prepared_value not in original_values:
-            # If the current value is not among the initial values
-            # set for this field, then it means that this field got
-            # overridden on the way, and we should preserve it.
+            new_headers.add(prepared_name, prepared_value)
             continue
 
-        new_headers.popone(prepared_name)
-        new_headers.update(zip(original_keys, original_values))
+        replaced_keys.add(casefold_name)
+        for key, value in original_items:
+            new_headers.add(key, value)
 
     prepared_request.headers = new_headers
 
