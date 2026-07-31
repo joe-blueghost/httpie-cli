@@ -1,0 +1,45 @@
+{
+  "enabledMcpjsonServers": [
+    "leftenant"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(GIT_COMMITTER_NAME=* git:*)",
+      "Bash(GIT_TERMINAL_PROMPT=0 git:*)",
+      "Bash(npm *)",
+      "Bash(ls:*)",
+      "Bash(tree:*)",
+      "Bash(jq:*)",
+      "Glob",
+      "Grep",
+      "Read",
+      "WebSearch",
+      "mcp__leftenant__*"
+    ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/cate/needs-attention.mjs\"",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/cate/permission-request.mjs\"",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}
